@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -20,18 +20,62 @@ interface PlantInfo {
 }
 
 export default function PlantIdentifier() {
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [plantInfo, setPlantInfo] = useState<PlantInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showCamera, setShowCamera] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setSelectedImage(file);
+      const imageUrl = URL.createObjectURL(file);
+      setSelectedImage(imageUrl);
       identifyPlant(file);
     }
   };
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setShowCamera(true);
+      }
+    } catch (err) {
+      console.error("Error accessing camera:", err);
+      setError("Unable to access camera. Please make sure you've granted the necessary permissions.");
+    }
+  };
+
+  const capturePhoto = useCallback(() => {
+    if (videoRef.current && canvasRef.current) {
+      const context = canvasRef.current.getContext('2d');
+      if (context) {
+        canvasRef.current.width = videoRef.current.videoWidth;
+        canvasRef.current.height = videoRef.current.videoHeight;
+        context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
+        const imageDataUrl = canvasRef.current.toDataURL('image/jpeg');
+        setSelectedImage(imageDataUrl);
+        setShowCamera(false);
+
+        // Stop all video streams
+        const stream = videoRef.current.srcObject as MediaStream;
+        const tracks = stream.getTracks();
+        tracks.forEach(track => track.stop());
+
+        // Convert data URL to File object
+        fetch(imageDataUrl)
+          .then(res => res.blob())
+          .then(blob => {
+            const file = new File([blob], "captured_image.jpg", { type: "image/jpeg" });
+            identifyPlant(file);
+          });
+      }
+    }
+  }, []);
 
   const identifyPlant = async (file: File) => {
     setLoading(true);
@@ -66,7 +110,6 @@ export default function PlantIdentifier() {
       const response = await result.response;
       const text = response.text();
 
-      // Parse the response
       const parsedInfo = parseResponse(text);
       setPlantInfo(parsedInfo);
     } catch (error) {
@@ -110,33 +153,49 @@ export default function PlantIdentifier() {
       <div className="max-w-md mx-auto bg-white rounded-xl shadow-2xl overflow-hidden">
         <div className="px-4 py-5 sm:p-6">
           <h1 className="text-3xl font-extrabold text-gray-900 text-center mb-6">Plant Sage</h1>
-          <p className="text-center text-gray-600 mb-8">Upload a plant image and let AI identify it for you</p>
+          <p className="text-center text-gray-600 mb-8">Upload a plant image or use your camera to identify plants</p>
           
-          <div className="mb-6">
-            <label htmlFor="imageUpload" className="block text-sm font-medium text-gray-700 mb-2">
-              Choose an image
-            </label>
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-              <div className="space-y-1 text-center">
-                <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <div className="flex text-sm text-gray-600">
-                  <label htmlFor="imageUpload" className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
-                    <span>Upload a file</span>
-                    <input id="imageUpload" name="imageUpload" type="file" accept="image/*" onChange={handleImageUpload} className="sr-only" />
-                  </label>
-                  <p className="pl-1">or drag and drop</p>
-                </div>
-                <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+          {!showCamera && (
+            <div className="mb-6 space-y-4">
+              <button
+                onClick={startCamera}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Use Camera
+              </button>
+              <div className="relative">
+                <label htmlFor="imageUpload" className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer">
+                  Upload Image
+                </label>
+                <input 
+                  id="imageUpload" 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleImageUpload} 
+                  className="sr-only"
+                />
               </div>
             </div>
-          </div>
+          )}
 
-          {selectedImage && (
+          {showCamera && (
+            <div className="mb-6">
+              <video ref={videoRef} autoPlay className="w-full rounded-lg" />
+              <button
+                onClick={capturePhoto}
+                className="mt-2 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              >
+                Capture Photo
+              </button>
+            </div>
+          )}
+
+          <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+          {selectedImage && !showCamera && (
             <div className="mb-6">
               <Image
-                src={URL.createObjectURL(selectedImage)}
+                src={selectedImage}
                 alt="Selected plant"
                 width={300}
                 height={300}
@@ -158,6 +217,9 @@ export default function PlantIdentifier() {
           {plantInfo && (
             <div className="bg-green-50 rounded-lg p-6 shadow-inner">
               <h2 className="text-2xl font-bold text-green-800 mb-2">{plantInfo.name}</h2>
+              {plantInfo.alternativeName && (
+                <p className="text-lg text-green-600 mb-2">Also known as: {plantInfo.alternativeName}</p>
+              )}
               <p className="text-md italic text-gray-600 mb-4">{plantInfo.scientificName}</p>
               <p className="text-gray-700 leading-relaxed">{plantInfo.description}</p>
             </div>
