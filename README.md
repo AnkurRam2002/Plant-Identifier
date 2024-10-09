@@ -10,16 +10,19 @@ The Plant Sage is a web application that uses AI to identify plants from images 
 - User-friendly Interface: Intuitive and responsive design made with Tailwind CSS for a smooth user experience.
 - Mobile Friendly: Designed to work flawlessly on both desktop and mobile devices.
 
+<h3>Technologies Used</h3>
 
+- Next.js: React-based framework for server-side rendering and building scalable web applications.
+- Tailwind CSS: Utility-first CSS framework for designing a responsive and modern UI.
+- Gemini Flash API: AI-powered API for identifying plants based on image input.
+- Camera API Integration: Allows capturing images directly from the user’s device camera for easy plant identification.
+- Node.js: Used for backend operations and server management.
 
+<h3>How to Use</h3>
 
-
-
-
-
-
-
-
+- Upload an Image: You can either upload a picture from your device or capture a fresh one using your device’s camera.
+- Identify the Plant: The AI processes the image and provides detailed information about the plant, including its name and relevant details.
+- View Results: Instantly view the identification result with plant name, scientific name, and other data.
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
