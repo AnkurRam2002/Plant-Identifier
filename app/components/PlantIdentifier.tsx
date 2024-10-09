@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import CameraCapture from './CameraCapture';
 
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_GEMINI_API_KEY;
 
@@ -20,62 +21,28 @@ interface PlantInfo {
 }
 
 export default function PlantIdentifier() {
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [plantInfo, setPlantInfo] = useState<PlantInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setSelectedImage(imageUrl);
+      setSelectedImage(file);
       identifyPlant(file);
     }
   };
 
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        setShowCamera(true);
-      }
-    } catch (err) {
-      console.error("Error accessing camera:", err);
-      setError("Unable to access camera. Please make sure you've granted the necessary permissions.");
-    }
+  const handleCameraCapture = (imageBlob: Blob) => {
+    const file = new File([imageBlob], "camera_capture.jpg", { type: "image/jpeg" });
+    setSelectedImage(file);
+    identifyPlant(file);
+    setShowCamera(false);
   };
-
-  const capturePhoto = useCallback(() => {
-    if (videoRef.current && canvasRef.current) {
-      const context = canvasRef.current.getContext('2d');
-      if (context) {
-        canvasRef.current.width = videoRef.current.videoWidth;
-        canvasRef.current.height = videoRef.current.videoHeight;
-        context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
-        const imageDataUrl = canvasRef.current.toDataURL('image/jpeg');
-        setSelectedImage(imageDataUrl);
-        setShowCamera(false);
-
-        // Stop all video streams
-        const stream = videoRef.current.srcObject as MediaStream;
-        const tracks = stream.getTracks();
-        tracks.forEach(track => track.stop());
-
-        // Convert data URL to File object
-        fetch(imageDataUrl)
-          .then(res => res.blob())
-          .then(blob => {
-            const file = new File([blob], "captured_image.jpg", { type: "image/jpeg" });
-            identifyPlant(file);
-          });
-      }
-    }
-  }, []);
 
   const identifyPlant = async (file: File) => {
     setLoading(true);
@@ -153,49 +120,40 @@ export default function PlantIdentifier() {
       <div className="max-w-md mx-auto bg-white rounded-xl shadow-2xl overflow-hidden">
         <div className="px-4 py-5 sm:p-6">
           <h1 className="text-3xl font-extrabold text-gray-900 text-center mb-6">Plant Sage</h1>
-          <p className="text-center text-gray-600 mb-8">Upload a plant image or use your camera to identify plants</p>
+          <p className="text-center text-gray-600 mb-8">Upload or capture a plant image and let AI identify it for you</p>
           
-          {!showCamera && (
-            <div className="mb-6 space-y-4">
+          <div className="mb-6">
+            <div className="flex justify-center space-x-4">
               <button
-                onClick={startCamera}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                onClick={() => fileInputRef.current?.click()}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
-                Use Camera
+                Upload Image
               </button>
-              <div className="relative">
-                <label htmlFor="imageUpload" className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer">
-                  Upload Image
-                </label>
-                <input 
-                  id="imageUpload" 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={handleImageUpload} 
-                  className="sr-only"
-                />
-              </div>
+              <button
+                onClick={() => setShowCamera(true)}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              >
+                Take Photo
+              </button>
             </div>
-          )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+          </div>
 
           {showCamera && (
-            <div className="mb-6">
-              <video ref={videoRef} autoPlay className="w-full rounded-lg" />
-              <button
-                onClick={capturePhoto}
-                className="mt-2 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-              >
-                Capture Photo
-              </button>
-            </div>
+            <CameraCapture onCapture={handleCameraCapture} onClose={() => setShowCamera(false)} />
           )}
 
-          <canvas ref={canvasRef} style={{ display: 'none' }} />
-
-          {selectedImage && !showCamera && (
+          {selectedImage && (
             <div className="mb-6">
               <Image
-                src={selectedImage}
+                src={URL.createObjectURL(selectedImage)}
                 alt="Selected plant"
                 width={300}
                 height={300}
