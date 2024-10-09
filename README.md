@@ -1,3 +1,26 @@
+<h1 align="center">Plant Sage</h1>
+
+The Plant Sage is a web application that uses AI to identify plants from images uploaded by users or captured directly through their device's camera. This project leverages the power of AI and deep learning to provide accurate identification results in real time, making it a handy tool for botanists, hobbyists, gardeners, and nature lovers.
+
+<h3>Features</h3>
+
+- AI-based Plant Identification: Upload a picture or capture one using your device’s camera to instantly identify the plant.
+- Camera Integration: Directly access your device's camera for a seamless plant identification experience.
+- Real-time Results: Get accurate identification and plant information within seconds.
+- User-friendly Interface: Intuitive and responsive design made with Tailwind CSS for a smooth user experience.
+- Mobile Friendly: Designed to work flawlessly on both desktop and mobile devices.
+
+
+
+
+
+
+
+
+
+
+
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
