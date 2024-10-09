@@ -175,9 +175,6 @@ export default function PlantIdentifier() {
           {plantInfo && (
             <div className="bg-green-50 rounded-lg p-6 shadow-inner">
               <h2 className="text-2xl font-bold text-green-800 mb-2">{plantInfo.name}</h2>
-              {plantInfo.alternativeName && (
-                <p className="text-lg text-green-600 mb-2">Also known as: {plantInfo.alternativeName}</p>
-              )}
               <p className="text-md italic text-gray-600 mb-4">{plantInfo.scientificName}</p>
               <p className="text-gray-700 leading-relaxed">{plantInfo.description}</p>
             </div>
