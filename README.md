@@ -24,6 +24,10 @@ The Plant Sage is a web application that uses AI to identify plants from images 
 - Identify the Plant: The AI processes the image and provides detailed information about the plant, including its name and relevant details.
 - View Results: Instantly view the identification result with plant name, scientific name, and other data.
 
+<h3>Live</h3>
+
+-
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
