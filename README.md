@@ -8,7 +8,7 @@ The Plant Sage is a web application that uses AI to identify plants from images 
 - Camera Integration: Directly access your device's camera for a seamless plant identification experience.
 - Real-time Results: Get accurate identification and plant information within seconds.
 - User-friendly Interface: Intuitive and responsive design made with Tailwind CSS for a smooth user experience.
-- Mobile First: Designed with a mobile-first approach to ensure flawless performance on both mobile and desktop devices.
+- Mobile First: Optimized primarily for mobile devices, ensuring seamless functionality across different screen sizes.
 
 <h3>Technologies Used</h3>
 
